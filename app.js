@@ -25,6 +25,14 @@ const DEFAULT_MARGIN_FLOOR = 0.25;
   const pct = (m) => m === null ? "unknown" : (m * 100).toFixed(1) + "%";
   const N = (s) => '<span class="num">' + esc(s) + "</span>";
   const monthLabel = (ym) => { const m = /^(\d{4})-(\d{2})$/.exec(ym || ""); return m ? MONTH_NAMES[+m[2] - 1] + " " + m[1] : ym; };
+  // Square feet: optional livingSF / underRoofSF on the job (or its budget).
+  // Only a real number counts; absent/null renders as "not on file". Never invented.
+  const sfVal = (v) => {
+    if (typeof v === "number") return isFinite(v) ? v : null;
+    if (typeof v === "string" && v.trim() !== "") { const n = parseFloat(v.replace(/,/g, "")); return isFinite(n) ? n : null; }
+    return null;
+  };
+  const fmtSF = (v) => { const n = sfVal(v); return n === null ? "not on file" : Math.round(n).toLocaleString("en-US"); };
 
   function marginOf(j) {
     if (!isNum(j.totalCost) || !isNum(j.revenue) || !(j.revenue > 0)) return null;
@@ -56,7 +64,18 @@ const DEFAULT_MARGIN_FLOOR = 0.25;
     catch (e1) { return showError(e1); }
     const p = (DATA && DATA.pnl) || {};
     FLOOR = isNum(p.marginFloor) ? p.marginFloor : DEFAULT_MARGIN_FLOOR;
-    JOBS = (Array.isArray(p.jobs) ? p.jobs : []).map(withFloorFlag);
+    // SF fallback: if a P&L job carries no livingSF/underRoofSF, take it from
+    // that job's budget (budgets.jobs[], matched by jobId). Still absent = not on file.
+    const budgetById = {};
+    ((DATA.budgets && DATA.budgets.jobs) || []).forEach((b) => { if (b && b.jobId != null) budgetById[String(b.jobId)] = b; });
+    JOBS = (Array.isArray(p.jobs) ? p.jobs : []).map((j) => {
+      const b = budgetById[String(j && j.id)];
+      if (!b) return j;
+      const out = Object.assign({}, j);
+      if (sfVal(out.livingSF) === null && sfVal(b.livingSF) !== null) out.livingSF = b.livingSF;
+      if (sfVal(out.underRoofSF) === null && sfVal(b.underRoofSF) !== null) out.underRoofSF = b.underRoofSF;
+      return out;
+    }).map(withFloorFlag);
     render();
   }
 
@@ -204,7 +223,8 @@ const DEFAULT_MARGIN_FLOOR = 0.25;
       const costed = isNum(j.totalCost);
       const p = costed && isNum(j.revenue) ? j.revenue - j.totalCost : null;
       const m = marginOf(j);
-      const meta = [j.date, DIV_LABEL[j.division] || j.division, j.houses ? j.houses + (j.houses === 1 ? " house" : " houses") : null].filter(Boolean).join(" · ");
+      const meta = [j.date, DIV_LABEL[j.division] || j.division, j.houses ? j.houses + (j.houses === 1 ? " house" : " houses") : null,
+        "Living SF: " + fmtSF(j.livingSF), "Under Roof SF: " + fmtSF(j.underRoofSF)].filter(Boolean).join(" · ");
       h += '<details class="job' + (isFlagged(j) ? " flagged" : "") + '"' + (isFlagged(j) ? " open" : "") + "><summary>" +
         '<span class="jname">' + esc(j.name) + "</span>" +
         '<span class="jprofit">' + (p === null ? '<span class="txt">' + (costed ? "Revenue TBD" : "Cost TBD") + "</span>" : N(money0(p))) + (m === null ? (j.revenue === 0 ? '<span class="pct txt">No revenue</span>' : "") : '<span class="pct">' + esc(pct(m)) + "</span>") + "</span>" +
@@ -212,6 +232,7 @@ const DEFAULT_MARGIN_FLOOR = 0.25;
         '<span class="chev"><span class="c-open">Show detail</span><span class="c-close">Hide detail</span></span></summary>' +
         '<div class="jbody">' + (j.detail ? "<p>" + esc(j.detail) + "</p>" : "") + (j.note ? "<p><b>Note:</b> " + esc(j.note) + "</p>" : "") +
         '<table class="kv"><tbody>' +
+        kvRow("Living SF", fmtSF(j.livingSF)) + kvRow("Under Roof SF", fmtSF(j.underRoofSF)) +
         kvRow("Billed revenue", isNum(j.revenue) ? money(j.revenue) : "not entered") + kvRow("Material", money(j.material)) +
         kvRow("Labor (incl. meter labor)", money(j.labor)) + kvRow("Permit / other", money(j.other)) +
         kvRow("Total cost", money(j.totalCost)) + kvRow("Profit", p === null ? "unknown" : money(p)) +
