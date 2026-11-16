@@ -46,6 +46,60 @@
     });
   }
 
+
+  var ALERT = "https://formspree.io/f/mzerejza";
+  var FAILS = "sharma-fin-fails:";
+
+  function appLabel(opts) {
+    var path = (location.pathname || "").toLowerCase();
+    if (path.indexOf("/sharma-ar") !== -1) return "Sharma AR";
+    if (path.indexOf("/sharma-pnl") !== -1) return "Sharma P&L";
+    var n = (opts && opts.appName) || "";
+    if (/receivable/i.test(n)) return "Sharma AR";
+    if (/p\s*&?\s*l/i.test(n)) return "Sharma P&L";
+    return n || "Sharma finance app";
+  }
+  function failCount(opts) {
+    try {
+      var n = parseInt(localStorage.getItem(FAILS + appLabel(opts)) || "0", 10);
+      return (n > 0 && isFinite(n)) ? n : 0;
+    } catch (x) { return 0; }
+  }
+  function setFailCount(opts, n) {
+    try {
+      var k = FAILS + appLabel(opts);
+      if (n > 0) localStorage.setItem(k, String(n));
+      else localStorage.removeItem(k);
+    } catch (x) {}
+  }
+  function alertTime(d) {
+    var iso = d.toISOString(), local = iso;
+    try {
+      local = d.toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", second: "2-digit", timeZoneName: "short" });
+    } catch (x) {}
+    return iso + " / " + local + " America/New_York";
+  }
+  // Email office@ after 5, 10, 15, ... wrong tries. Never send the attempted or real code.
+  function maybeAlert(opts, n) {
+    if (n < 5 || n % 5 !== 0) return;
+    var app = appLabel(opts);
+    var body = {
+      app: app,
+      url: String(location.href || ""),
+      time: alertTime(new Date()),
+      attempts: n,
+      userAgent: String(navigator.userAgent || ""),
+      _subject: "Sharma app lock: " + n + " wrong passcode tries on " + app
+    };
+    try {
+      fetch(ALERT, {
+        method: "POST",
+        headers: { "Accept": "application/json", "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      }).then(function () {}, function () {});
+    } catch (x) {}
+  }
+
   function css() {
     if (document.getElementById("sl-css")) return;
     var st = document.createElement("style");
@@ -107,6 +161,7 @@
         var key;
         derive(code, e).then(function (k) { key = k; return decrypt(k, e); }).then(function (data) {
           code = ""; input.value = "";
+          setFailCount(opts, 0);
           return remember(key, e).then(function () {
             root.remove();
             document.documentElement.classList.remove("sl-locked");
@@ -114,6 +169,9 @@
           });
         }).catch(function () {
           code = ""; input.value = "";
+          var n = failCount(opts) + 1;
+          setFailCount(opts, n);
+          maybeAlert(opts, n);
           err.textContent = "Wrong code"; err.hidden = false;
           btn.disabled = false; btn.textContent = "Unlock";
           input.focus();
@@ -146,7 +204,7 @@
           return prompt(e, opts);
         });
       })
-      .then(function (data) { addLockButton(); return data; });
+      .then(function (data) { setFailCount(opts, 0); addLockButton(); return data; });
   }
 
   window.SharmaLock = { load: load };
