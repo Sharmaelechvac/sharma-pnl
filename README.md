@@ -6,17 +6,25 @@ profit and margin, with the 25% margin floor flagged. Static site for GitHub Pag
 
 ## Where the numbers live
 
-There are no numbers in this repo. The app reads one shared file at load:
+There are no numbers in this repo. The app reads one shared, encrypted file at load:
 
-    https://sharmaelechvac.github.io/sharma-ar/finance-data.json
+    https://sharmaelechvac.github.io/sharma-ar/finance-data.enc.json
 
-That file lives in the **sharma-ar** repo (root, `finance-data.json`). Sharma AR reads `meta` +
+That file lives in the **sharma-ar** repo (root, `finance-data.enc.json`). Sharma AR reads `meta` +
 `invoices`; Sharma P&L reads `meta` + `pnl`. One file, so the two apps always agree and nothing is
 typed twice. To change a number, edit that JSON only. Never edit the code for numbers.
 
-The URL is the `DATA_URL` constant at the top of `app.js`. If it can't be reached, the app tries
-`./finance-data.json` (`FALLBACK_URL`). No copy ships here on purpose, so there is never a second
-set of numbers to drift. Fetches use `cache: "no-store"`, so a reload always shows the latest file.
+The URL is the `DATA_URL` constant at the top of `app.js`. There is no fallback copy, on purpose,
+so there is never a second set of numbers to drift.
+
+## Passcode lock
+
+`lock.js` (identical to the one in sharma-ar) shows the code screen, derives the AES-GCM key with
+PBKDF2-SHA256 in the browser (WebCrypto) and decrypts the file. Wrong code shows "Wrong code".
+Only the derived key is kept, in `sessionStorage` for this tab; the code itself is never stored.
+Unlocking either app unlocks both in the same tab (same origin). The code is not in this repo;
+Sanjay gives it out directly. How to update the numbers: see the sharma-ar README
+(`tools/encrypt.py`). Fetches use `cache: "no-store"`, so a reload always shows the latest file.
 
 ## What the app reads from `pnl`
 
@@ -30,7 +38,7 @@ Full field list: `SCHEMA.md` in the sharma-ar repo (shared schema v1, plus the `
 ## Revenue basis: billed (accrual)
 
 Sanjay's call, 2026-11-15: revenue is booked **when billed**, not when collected. The page labels it
-"Billed revenue". The invoices in `finance-data.json` are the billed record, so:
+"Billed revenue". The invoices in the shared data file are the billed record, so:
 
 - `pnl.months[].electrical.revenue` = sum of `invoices[].amount` where `trade` is `"electrical"` and
   `dateSent` falls in that month (same for `hvac`; `totals` = both). Retainage counts in the month
@@ -50,6 +58,7 @@ Sanjay's call, 2026-11-15: revenue is booked **when billed**, not when collected
 
     index.html        page shell
     styles.css        Sharma brand styles (navy / gold, Barlow Semi Condensed, Inter, IBM Plex Mono)
+    lock.js           code screen + WebCrypto decrypt of the shared data file
     app.js            loads the data file and draws the page
     assets/logo.png   Sharma Electric & HVAC horizontal logo
     assets/fonts/     self-hosted fonts

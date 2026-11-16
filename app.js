@@ -1,10 +1,8 @@
-/* Sharma P&L — reads the shared finance-data.json (same file as Sharma AR).
-   To change numbers, edit finance-data.json only. Never put numbers in this file. */
+/* Sharma P&L — reads the shared encrypted finance-data.enc.json (same file as Sharma AR),
+   unlocked by lock.js. To change numbers, edit the data file only. Never put numbers in this file. */
 
 // Single source of truth: the shared file published with the Sharma AR app.
-const DATA_URL = "https://sharmaelechvac.github.io/sharma-ar/finance-data.json";
-// Used only if DATA_URL can't be reached (offline, or AR site not published yet).
-const FALLBACK_URL = "./finance-data.json";
+const DATA_URL = "https://sharmaelechvac.github.io/sharma-ar/finance-data.enc.json";
 // Used only if the data file has no pnl.marginFloor.
 const DEFAULT_MARGIN_FLOOR = 0.25;
 
@@ -54,11 +52,8 @@ const DEFAULT_MARGIN_FLOOR = 0.25;
     return r.json();
   }
   async function load() {
-    try { DATA = await getJson(DATA_URL); SOURCE = DATA_URL; }
-    catch (e1) {
-      try { DATA = await getJson(FALLBACK_URL); SOURCE = FALLBACK_URL + " (backup copy, shared file not reachable)"; }
-      catch (e2) { return showError(e1, e2); }
-    }
+    try { DATA = await window.SharmaLock.load(DATA_URL, { appName: "P&L", logo: "assets/logo.png" }); SOURCE = DATA_URL; }
+    catch (e1) { return showError(e1); }
     const p = (DATA && DATA.pnl) || {};
     FLOOR = isNum(p.marginFloor) ? p.marginFloor : DEFAULT_MARGIN_FLOOR;
     JOBS = (Array.isArray(p.jobs) ? p.jobs : []).map(withFloorFlag);
@@ -113,7 +108,7 @@ const DEFAULT_MARGIN_FLOOR = 0.25;
 
     if (!hasData) {
       h += '<section class="panel empty"><h2>No numbers loaded yet</h2>' +
-        "<p>The finance data file is in place but has no P&amp;L entries. Jarvis fills <code>finance-data.json</code>; this page updates on the next load.</p>" +
+        "<p>The finance data file is in place but has no P&amp;L entries. Jarvis fills the shared data file; this page updates on the next load.</p>" +
         "<p>Nothing on this page is estimated. Blank means not entered.</p></section>";
       app.innerHTML = h; renderFoot(); return;
     }
@@ -299,9 +294,9 @@ const DEFAULT_MARGIN_FLOOR = 0.25;
     if (cb) cb.addEventListener("change", () => { state.onlyFlags = cb.checked; render(); });
   }
 
-  function showError(e1, e2) {
-    app.innerHTML = '<section class="panel err"><h2>Could not load the numbers</h2><p>Tried the shared file and the backup copy. Check the connection and reload.</p>' +
-      '<p class="sub">' + esc(e1 && e1.message) + "<br>" + esc(e2 && e2.message) + "</p></section>";
+  function showError(e1) {
+    app.innerHTML = '<section class="panel err"><h2>Could not load the numbers</h2><p>Could not read the shared data file. Check the connection and reload.</p>' +
+      '<p class="sub">' + esc(e1 && e1.message) + "</p></section>";
   }
 
   load();
