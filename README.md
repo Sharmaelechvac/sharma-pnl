@@ -57,3 +57,11 @@ Sanjay's call, 2026-11-15: revenue is booked **when billed**, not when collected
 Design follows the Sharma app rules (flat panels, 1px borders, gold rule under headings, 4px
 corners, 16px minimum text, 48px tap targets). Nothing ships until Mark (Design) signs off and
 Sanjay approves.
+
+## Publishing (how edits go live)
+
+- Edit **`main`** only. GitHub Pages serves the `gh-pages` branch.
+- `.github/workflows/publish.yml` runs on every push to `main`: it copies `main` onto `gh-pages`
+  and publishes it. Live in about 1 minute. Never edit `gh-pages` by hand; it is overwritten.
+- If Sanjay ever switches Settings > Pages to "Deploy from branch: main / (root)", the workflow
+  and the `gh-pages` branch can be removed.
