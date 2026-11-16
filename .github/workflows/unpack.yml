@@ -1,0 +1,27 @@
+name: unpack-binaries
+on:
+  push:
+    branches: [main]
+    paths: ['_bin/**']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  unpack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Decode _bin/*.b64 into real binary files
+        run: |
+          set -e
+          find _bin -name '*.b64' | while read f; do
+            out="${f#_bin/}"; out="${out%.b64}"
+            mkdir -p "$(dirname "$out")"
+            base64 -d "$f" > "$out"
+            git add "$out"
+          done
+          git rm -r -q _bin
+          git config user.name "github-actions[bot]"
+          git config user.email "41898299+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Unpack binary assets (logo, fonts)"
+          git push
