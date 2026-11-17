@@ -1,3 +1,7 @@
+> **Moved 2026-11-17.** Sharma P&L is now the P&L tab of Sharma Finance:
+> `https://sharmaelechvac.github.io/sharma-ar/pnl/` (code in the `sharma-ar` repo, `pnl/`).
+> `index.html` here only redirects. The old page is kept as `index-old.html` for rollback.
+
 # Sharma P&L
 
 Profit and loss by job for Sharma Electric & HVAC: billed revenue, material, labor, other cost,
