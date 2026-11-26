@@ -304,7 +304,8 @@ const DEFAULT_MARGIN_FLOOR = 0.25;
     foot.innerHTML = "<p>Numbers as of " + (m.asOf ? N(m.asOf) : "not set") + (m.updatedBy ? " · updated by " + esc(m.updatedBy) : "") + ".</p>" +
       "<p>Data file: <code>" + esc(SOURCE) + "</code></p>" +
       (src.length ? "<p>Sources: " + src.map(esc).join("; ") + "</p>" : "") +
-      "<p>Same data file as Sharma AR. Sanjay sets every price.</p>";
+      "<p>Same data file as Sharma AR. Sanjay sets every price.</p>" +
+      "<p><img src=\"sharma360-logo.png\" alt=\"SHARMA360\" style=\"height:20px;width:auto\"></p>";
   }
 
   function bindFilters() {
