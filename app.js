@@ -305,7 +305,7 @@ const DEFAULT_MARGIN_FLOOR = 0.25;
       "<p>Data file: <code>" + esc(SOURCE) + "</code></p>" +
       (src.length ? "<p>Sources: " + src.map(esc).join("; ") + "</p>" : "") +
       "<p>Same data file as Sharma AR. Sanjay sets every price.</p>" +
-      "<p><img src=\"sharma360-logo.png?v=20261126-3\" alt=\"SHARMA360\" style=\"height:30px;width:auto;background:#1a2f61;padding:5px 9px;border-radius:4px\"></p>";
+      "<p>Powered by <img src=\"sharma360-logo.png?v=20261126-3\" alt=\"SHARMA360\" style=\"height:30px;width:auto;background:#1a2f61;padding:5px 9px;border-radius:4px;vertical-align:middle\"></p>";
   }
 
   function bindFilters() {
